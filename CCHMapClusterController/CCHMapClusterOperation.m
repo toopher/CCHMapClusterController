@@ -99,6 +99,11 @@
 
 - (void)start
 {
+    if (self.cancelled) {
+        self.finished = YES;
+        return;
+    }
+
     self.executing = YES;
     
     double zoomLevel = CCHMapClusterControllerZoomLevelForRegion(self.mapViewRegion.center.longitude, self.mapViewRegion.span.longitudeDelta, self.mapViewWidth);
@@ -193,9 +198,16 @@
     NSArray *annotationsToRemove = [annotationsToRemoveAsSet allObjects];
     
     // Show cluster annotations on map
-    [_visibleAnnotationsMapTree removeAnnotations:annotationsToRemove];
-    [_visibleAnnotationsMapTree addAnnotations:annotationsToAdd];
     dispatch_async(dispatch_get_main_queue(), ^{
+        if (self.cancelled) {
+            self.executing = NO;
+            self.finished = YES;
+            return;
+        }
+
+        [_visibleAnnotationsMapTree removeAnnotations:annotationsToRemove];
+        [_visibleAnnotationsMapTree addAnnotations:annotationsToAdd];
+
         [self.mapView addAnnotations:annotationsToAdd];
         [self.animator mapClusterController:self.clusterController willRemoveAnnotations:annotationsToRemove withCompletionHandler:^{
             [self.mapView removeAnnotations:annotationsToRemove];
